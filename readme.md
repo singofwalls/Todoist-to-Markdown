@@ -13,14 +13,14 @@ In the footers, comments are displayed in blockquotes while descriptions are jus
 ![Obsidian](images/markdown.png)
 
 ## Usage
-Obtain a JSON dump of your Todoist account from [Export for Todoist](https://darekkay.com/todoist-export/) by Darek Kay
+Obtain a JSON dump of your Todoist account from [Export for Todoist](https://darekkay.com/todoist-export/) by Darek Kay under the [MIT License](https://github.com/darekkay/todoist-export/blob/master/LICENSE)
 
 Run the script:
 `python parse_todoist.py <json_file>`
 
 
 ## Attachments
-To download attachments, install [Full Offline Backup for Todoist](https://github.com/joanbm/full-offline-backup-for-todoist) by [joanbm](https://github.com/joanbm)
+To download attachments, install [Full Offline Backup for Todoist](https://github.com/joanbm/full-offline-backup-for-todoist) by [joanbm](https://github.com/joanbm) under the [GNU General Public License v3.0](https://github.com/joanbm/full-offline-backup-for-todoist/blob/master/LICENSE)
 
 Clone the repo and install it with `pip install -e ./full-offline-backup-for-todoist`
 
