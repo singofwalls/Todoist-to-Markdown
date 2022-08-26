@@ -12,12 +12,12 @@ import argparse
 import json
 import os
 from pathlib import Path
+import string
 from typing import Any, Dict
 from utility import Item, Note, Project, Section
-from unparse_markdown import unparse_project
 
 
-def parse_notes(todoist: dict, ids: Dict[str, Any]) -> None:
+def parse_notes(todoist: dict, ids: Dict[int, Any]) -> None:
     """Parse notes into their corresponding projects and items in-place."""
 
     for note in todoist["notes"] + todoist["project_notes"]:
@@ -42,16 +42,13 @@ def parse_notes(todoist: dict, ids: Dict[str, Any]) -> None:
         if attachment is not None:
             if attachment["resource_type"] == "image":
                 note_obj.attachment = {"image": attachment["image"]}
-            else:
-                # Handle as URL
-                note_obj.attachment = {"title": attachment["title"], "url": attachment["url"]}
 
         parent.notes.append(note_obj)
         ids[note["id"]] = note_obj
 
 
 
-def parse_items(todoist: dict, ids: Dict[str, Any]) -> None:
+def parse_items(todoist: dict, ids: Dict[int, Any]) -> None:
     """Parse items into their corresponding projects in-place."""
     to_process = []
 
@@ -106,7 +103,7 @@ def parse_items(todoist: dict, ids: Dict[str, Any]) -> None:
         parse_items({"items": to_process}, ids)
 
 
-def parse_labels(todoist: dict, ids: Dict[str, Any]) -> None:
+def parse_labels(todoist: dict, ids: Dict[int, Any]) -> None:
     """Parse label definitions into the IDs dict in-place."""
     for label in todoist["labels"]:
         if label["is_deleted"]:
@@ -115,7 +112,7 @@ def parse_labels(todoist: dict, ids: Dict[str, Any]) -> None:
         ids[label["id"]] = label["name"]
 
 
-def parse_sections(todoist: dict, ids: Dict[str, Any]) -> None:
+def parse_sections(todoist: dict, ids: Dict[int, Any]) -> None:
     """Parse sections into each corresponding project in-place."""
     for section in todoist["sections"]:
         if section["is_deleted"]:
@@ -132,9 +129,9 @@ def parse_sections(todoist: dict, ids: Dict[str, Any]) -> None:
         project.sections[section["id"]] = section_obj
 
 
-def parse_projects(todoist: dict, ids: Dict[str, Any]) -> Dict[str, Project]:
+def parse_projects(todoist: dict, ids: Dict[int, Any]) -> Dict[int, Project]:
     """Parse projects into a list of Projects."""
-    projects: Dict[str, Project] = {}
+    projects: Dict[int, Project] = {}
 
     for project in todoist["projects"]:
         if project["is_deleted"]:
@@ -145,6 +142,12 @@ def parse_projects(todoist: dict, ids: Dict[str, Any]) -> Dict[str, Project]:
         projects[project["id"]] = project_obj
 
     return projects
+
+
+def name_project_file(project_name: str) -> str:
+    """Get a filename-safe string from a project name."""
+    filesafe = string.ascii_lowercase + string.ascii_uppercase + string.digits + '.-'
+    return "".join(c for c in project_name if c in filesafe) + ".md"
 
 
 def parse_todoist(todoist: dict):
@@ -158,9 +161,9 @@ def parse_todoist(todoist: dict):
 
     os.makedirs("markdown", exist_ok=True)
 
-    for project_name, project in projects.items():
-        with open(Path("markdown") / project_name, "w") as f:
-            f.write(unparse_project(project))
+    for project in projects.values():
+        with open(Path("markdown") / name_project_file(project.name), "w") as f:
+            f.write(project.unparse())
 
 
 if __name__ == "__main__":
