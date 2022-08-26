@@ -10,55 +10,11 @@ Author: Reece Mathews
 
 import argparse
 import json
-from typing import Any, Dict, Optional
-
-
-# Labels: id, name, is_deleted
-# Items: Project ID, Section ID?, content, Checked, Description, ID, parent_id, is_deleted, date_added, labels
-# Notes (comments): content, file_attachment, id, is_deleted, item_id,
-# Projects: id, is_deleted, name
-# Sections: id, is_deleted, name, project_id
-
-
-class Note:
-    def __init__(self, content):
-        self.content = content
-        self.attachment: Optional[Dict[str, str]] = None
-
-    def __repr__(self) -> str:
-        return f"Note['{self.content}', {self.attachment}]"
-
-class Item:
-    def __init__(self, content, checked, description, date_added):
-        self.content = content
-        self.checked = checked
-        self.description = description
-        self.date_added = date_added
-        self.items = []
-        self.labels = []
-        self.notes = []
-
-    def __repr__(self) -> str:
-        return f"Item['{self.content}', {self.checked}, '{self.description}', {self.date_added}, {self.items}, {self.labels}, {self.notes}]"
-
-
-class Section:
-    def __init__(self, name):
-        self.items = []
-        self.name = name
-    def __repr__(self) -> str:
-        return f"Section['{self.name}', {self.items}]"
-
-
-class Project:
-    def __init__(self, name):
-        self.items = []
-        self.sections: Dict[str, Section] = {}
-        self.name = name
-        self.notes = []
-
-    def __repr__(self) -> str:
-        return f"Project['{self.name}', {self.items}, {self.sections}, {self.notes}]"
+import os
+from pathlib import Path
+from typing import Any, Dict
+from utility import Item, Note, Project, Section
+from unparse_markdown import unparse_project
 
 
 def parse_notes(todoist: dict, ids: Dict[str, Any]) -> None:
@@ -199,7 +155,12 @@ def parse_todoist(todoist: dict):
     parse_labels(todoist, ids)
     parse_items(todoist, ids)
     parse_notes(todoist, ids)
-    print(projects)
+
+    os.makedirs("markdown", exist_ok=True)
+
+    for project_name, project in projects.items():
+        with open(Path("markdown") / project_name, "w") as f:
+            f.write(unparse_project(project))
 
 
 if __name__ == "__main__":
