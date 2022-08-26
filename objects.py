@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from distutils.command.build_scripts import first_line_re
 from typing import Dict, List, Optional, Tuple
 from textwrap import indent
 
@@ -21,7 +22,11 @@ class Note:
         return f"Note['{self.content}', {self.attachment}]"
 
     def unparse(self) -> str:
-        contents = indent(self.content, "\t> ") + "\n"
+        content = self.content.split("\n")
+        content = "\n".join(line.strip() for line in content if line.strip())  # Remove blank lines
+
+        contents = indent(content, f"{INDENT_CHAR}> ")
+        contents += "\n"
         if self.attachment:
             if "image" in self.attachment:
                 contents += f"![]({self.attachment['image']})\n"
@@ -53,8 +58,14 @@ class Item:
         if self.description:
             contents_foot += f"{INDENT_CHAR}{self.description}\n"
 
+        first_note = True
         for note in self.notes:
-            contents_foot += note.unparse()
+            line = note.unparse() + "\n"
+            if first_note:
+                line = line.removeprefix(INDENT_CHAR)
+
+            contents_foot += line
+            first_note = False
 
         if self.content.startswith("*"):
             contents += self.content[2:].strip()
@@ -122,8 +133,8 @@ class Project:
         contents += f"# {self.name}\n\n"
 
         for note in self.notes:
-            note_contents_foot = note.unparse()
-            contents_foot += note_contents_foot
+            note_contents = note.unparse()
+            contents += note_contents
 
         for item in self.items:
             item_contents, item_contents_foot, item_count = item.unparse(0, item_count)

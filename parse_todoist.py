@@ -168,7 +168,7 @@ def parse_todoist(todoist: dict):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Parse a todoist JSON into Markdown.")
-    parser.add_argument("file", type=argparse.FileType("r"))
+    parser.add_argument("file", type=argparse.FileType("r"), nargs='?', default="todoist.json")
     args = parser.parse_args()
 
     parse_todoist(json.load(args.file))
