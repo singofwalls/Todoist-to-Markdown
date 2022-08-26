@@ -1,6 +1,5 @@
 creds.json
 todoist.json
-*.md
 __pycache__
 attachments/
 markdown/
