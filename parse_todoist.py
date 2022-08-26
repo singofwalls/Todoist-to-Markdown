@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 import string
 from typing import Any, Dict
-from utility import Item, Note, Project, Section
+from objects import Item, Note, Project, Section
 
 
 def parse_notes(todoist: dict, ids: Dict[int, Any]) -> None:

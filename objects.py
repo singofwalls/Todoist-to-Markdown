@@ -9,6 +9,9 @@ JSON_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 MARKDOWN_DATE_FORMAT = '%m/%d/%Y %I:%M %p'
 
 
+INDENT_CHAR = "\t"
+
+
 class Note:
     def __init__(self, content):
         self.content: str = content
@@ -23,7 +26,10 @@ class Note:
             if "image" in self.attachment:
                 contents += f"![]({self.attachment['image']})\n"
 
-        return indent(contents, "  " * indent_level)
+        if indent_level >= 1:
+            indent_level -= 1
+        return indent(contents, INDENT_CHAR * indent_level)
+
 
 class Item:
     def __init__(self, content, checked, description, date_added):
@@ -41,8 +47,11 @@ class Item:
     def unparse(self, indent_level=0) -> str:
         contents = ""
 
-        check_char = "x" if self.checked else " "
-        contents += f"- [{check_char}] {self.content}"
+        if self.content.startswith("*"):
+            contents += self.content[2:].strip()
+        else:
+            check_char = "x" if self.checked else " "
+            contents += f"- [{check_char}] {self.content}"
 
         for label in self.labels:
             contents += f" #{label}"
@@ -51,19 +60,18 @@ class Item:
 
         if ADD_DATE:
             date = datetime.strptime(self.date_added.strip("Z"), JSON_DATE_FORMAT)
-            contents += f"   *{date.strftime(MARKDOWN_DATE_FORMAT)}*\n"
+            contents += f"{INDENT_CHAR}*{date.strftime(MARKDOWN_DATE_FORMAT)}*\n"
 
         if self.description:
-            contents += f"   {self.description}\n"
+            contents += f"{INDENT_CHAR}{self.description}\n"
 
         for note in self.notes:
-            contents += note.unparse(indent_level)
-
+            contents += note.unparse(indent_level+1)
 
         for item in self.items:
             contents += item.unparse(indent_level+1)
 
-        return indent(contents, "  " * indent_level)
+        return indent(contents, INDENT_CHAR * indent_level)
 
 
 class Section:
@@ -96,12 +104,12 @@ class Project:
     def unparse(self) -> str:
         contents = ""
         contents += f"# {self.name}\n\n"
-        for item in self.items:
-            contents += item.unparse()
 
-        contents += "\n\n"
         for note in self.notes:
             contents += note.unparse()
+
+        for item in self.items:
+            contents += item.unparse()
 
         contents += "\n\n"
         for section in self.sections.values():
