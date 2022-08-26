@@ -1,8 +1,10 @@
 
 from datetime import datetime
-from distutils.command.build_scripts import first_line_re
 from typing import Dict, List, Optional, Tuple
 from textwrap import indent
+import uuid
+
+from download import download_attachment
 
 
 ADD_DATE = False
@@ -29,7 +31,9 @@ class Note:
         contents += "\n"
         if self.attachment:
             if "image" in self.attachment:
-                contents += f"![]({self.attachment['image']})\n"
+                name = str(uuid.uuid4()) + "." + self.attachment["image"].split(".")[-1]
+                if download_attachment(self.attachment["image"], name):
+                    contents += f"![](attachments/{name})\n"
 
         return contents
 
@@ -67,11 +71,14 @@ class Item:
             contents_foot += line
             first_note = False
 
-        if self.content.startswith("*"):
-            contents += self.content[2:].strip()
+
+        content = self.content
+        if content.startswith("*"):
+            content = content[2:].strip()
+            check_char = "x"
         else:
             check_char = "x" if self.checked else " "
-            contents += f"- [{check_char}] {self.content}"
+        contents += f"- [{check_char}] {content}"
 
         for label in self.labels:
             contents += f" #{label}"
@@ -133,7 +140,7 @@ class Project:
         contents += f"# {self.name}\n\n"
 
         for note in self.notes:
-            note_contents = note.unparse()
+            note_contents = note.unparse().removeprefix(INDENT_CHAR)
             contents += note_contents
 
         for item in self.items:

@@ -42,6 +42,7 @@ def parse_notes(todoist: dict, ids: Dict[int, Any]) -> None:
         if attachment is not None:
             if attachment["resource_type"] == "image":
                 note_obj.attachment = {"image": attachment["image"]}
+            # TODO[Reece]: Support "file" and other resource types
 
         parent.notes.append(note_obj)
         ids[note["id"]] = note_obj
