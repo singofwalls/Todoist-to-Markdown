@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from textwrap import indent
 
 
@@ -20,15 +20,13 @@ class Note:
     def __repr__(self) -> str:
         return f"Note['{self.content}', {self.attachment}]"
 
-    def unparse(self, indent_level=0) -> str:
-        contents = indent(self.content, "> ") + "\n"
+    def unparse(self) -> str:
+        contents = indent(self.content, "\t> ") + "\n"
         if self.attachment:
             if "image" in self.attachment:
                 contents += f"![]({self.attachment['image']})\n"
 
-        if indent_level >= 1:
-            indent_level -= 1
-        return indent(contents, INDENT_CHAR * indent_level)
+        return contents
 
 
 class Item:
@@ -44,8 +42,19 @@ class Item:
     def __repr__(self) -> str:
         return f"Item['{self.content}', {self.checked}, '{self.description}', {self.date_added}, {self.items}, {self.labels}, {self.notes}]"
 
-    def unparse(self, indent_level=0) -> str:
+    def unparse(self, indent_level: int, item_count: int) -> Tuple[str, str, int]:
         contents = ""
+        contents_foot = ""
+
+        if ADD_DATE:
+            date = datetime.strptime(self.date_added.strip("Z"), JSON_DATE_FORMAT)
+            contents_foot += f"{INDENT_CHAR}*{date.strftime(MARKDOWN_DATE_FORMAT)}*\n"
+
+        if self.description:
+            contents_foot += f"{INDENT_CHAR}{self.description}\n"
+
+        for note in self.notes:
+            contents_foot += note.unparse()
 
         if self.content.startswith("*"):
             contents += self.content[2:].strip()
@@ -56,22 +65,22 @@ class Item:
         for label in self.labels:
             contents += f" #{label}"
 
+        if contents_foot:
+            # Task has footnote
+            contents += f"[^{item_count}]"
+            contents_foot = f"[^{item_count}]: " + contents_foot
+            contents_foot += "\n"
+
         contents += "\n"
 
-        if ADD_DATE:
-            date = datetime.strptime(self.date_added.strip("Z"), JSON_DATE_FORMAT)
-            contents += f"{INDENT_CHAR}*{date.strftime(MARKDOWN_DATE_FORMAT)}*\n"
-
-        if self.description:
-            contents += f"{INDENT_CHAR}{self.description}\n"
-
-        for note in self.notes:
-            contents += note.unparse(indent_level+1)
+        item_count += 1  # Add this item to the running total
 
         for item in self.items:
-            contents += item.unparse(indent_level+1)
+            item_contents, item_contents_foot, item_count = item.unparse(indent_level+1, item_count)
+            contents += item_contents
+            contents_foot += item_contents_foot
 
-        return indent(contents, INDENT_CHAR * indent_level)
+        return indent(contents, INDENT_CHAR * indent_level), contents_foot, item_count
 
 
 class Section:
@@ -81,14 +90,18 @@ class Section:
     def __repr__(self) -> str:
         return f"Section['{self.name}', {self.items}]"
 
-    def unparse(self) -> str:
+    def unparse(self, item_count) -> Tuple[str, str, int]:
         contents = ""
+        contents_foot = ""
+
         contents += f"## {self.name}\n\n"
 
         for item in self.items:
-            contents += item.unparse()
+            item_contents, item_contents_foot, item_count = item.unparse(0, item_count)
+            contents += item_contents
+            contents_foot += item_contents_foot
 
-        return contents
+        return contents, contents_foot, item_count
 
 
 class Project:
@@ -103,16 +116,24 @@ class Project:
 
     def unparse(self) -> str:
         contents = ""
+        contents_foot = ""
+        item_count = 0
+
         contents += f"# {self.name}\n\n"
 
         for note in self.notes:
-            contents += note.unparse()
+            note_contents_foot = note.unparse()
+            contents_foot += note_contents_foot
 
         for item in self.items:
-            contents += item.unparse()
+            item_contents, item_contents_foot, item_count = item.unparse(0, item_count)
+            contents += item_contents
+            contents_foot += item_contents_foot
 
         contents += "\n\n"
         for section in self.sections.values():
-            contents += section.unparse()
+            section_contents, section_contents_foot, item_count = section.unparse(item_count)
+            contents += section_contents
+            contents_foot += section_contents_foot
 
-        return contents
+        return contents + "\n" + contents_foot
