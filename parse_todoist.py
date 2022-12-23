@@ -58,13 +58,19 @@ def parse_items(todoist: dict, ids: Dict[int, Any]) -> None:
             continue
 
         item_obj = Item(item["content"], item["checked"],
-                        item["description"], item["date_added"])
+                        item["description"], item["added_at"])
 
         for label in item["labels"]:
-            if label not in ids:
-                print(f"Label {label} not found for item {item['name']}")
-                continue
-            item_obj.labels.append(ids[label])
+            # if label is numeric but string, it's a label ID
+            if label.isnumeric():
+                if label not in ids:
+                    print(f"Label {label} not found for item {item['content']}")
+                    continue
+                else:
+                    item_obj.labels.append(ids[label])
+            else:
+                # its a string, so it's a label name
+                item_obj.labels.append(label)
 
         parent_found = False
         if item["parent_id"] is not None:
